@@ -1,0 +1,347 @@
+docker-compose -f ./docker/docker-compose-ca.yml up -d 
+
+mkdir -p organizations/peerOrganizations/auto.com/manufacturer.auto.com/
+mkdir -p organizations/peerOrganizations/auto.com/dealer.auto.com/
+mkdir -p organizations/peerOrganizations/auto.com/mvd.auto.com/
+
+export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/
+
+================================================================== Manufacturer ==================================================================================================
+
+enroll Manufacturer ca admin
+============================
+
+fabric-ca-client enroll -u https://admin:adminpw@localhost:7054 --caname ca-manufacturer --tls.certfiles ${PWD}/organizations/fabric-ca/manufacturer/tls-cert.pem
+
+Create config.yaml for Manufacturer 
+===================================
+
+  echo 'NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-manufacturer.pem
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-manufacturer.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-manufacturer.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-manufacturer.pem
+    OrganizationalUnitIdentifier: orderer' > ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/msp/config.yaml
+
+
+Register manufacturer peer
+==========================
+fabric-ca-client register --caname ca-manufacturer --id.name peer0manufacturer --id.secret peer0pw --id.type peer --tls.certfiles ${PWD}/organizations/fabric-ca/manufacturer/tls-cert.pem
+
+Register manufacturer user
+==========================
+fabric-ca-client register --caname ca-manufacturer --id.name user1 --id.secret user1pw --id.type client --tls.certfiles ${PWD}/organizations/fabric-ca/manufacturer/tls-cert.pem
+
+Register manufacturer Org admin
+==========================
+fabric-ca-client register --caname ca-manufacturer --id.name manufactureradmin --id.secret manufactureradminpw --id.type admin --tls.certfiles ${PWD}/organizations/fabric-ca/manufacturer/tls-cert.pem
+
+Generate Manufacturer peer MSP
+==============================
+fabric-ca-client enroll -u https://peer0manufacturer:peer0pw@localhost:7054 --caname ca-manufacturer -M ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/msp --csr.hosts peer0.manufacturer.auto.com --tls.certfiles ${PWD}/organizations/fabric-ca/manufacturer/tls-cert.pem
+
+Generate Manufacturer Peer tls cert
+===================================
+fabric-ca-client enroll -u https://peer0manufacturer:peer0pw@localhost:7054 --caname ca-manufacturer -M ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls --enrollment.profile tls --csr.hosts peer0.manufacturer.auto.com --csr.hosts localhost --tls.certfiles ${PWD}/organizations/fabric-ca/manufacturer/tls-cert.pem
+
+Organizing the folders
+======================
+
+Copy the certificate files
+==========================
+
+cp organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/tlscacerts/* organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/ca.crt
+cp organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/signcerts/* organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/server.crt
+cp organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/keystore/* organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/server.key
+
+mkdir -p ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/msp/tlscacerts
+cp ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/tlscacerts/* ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/msp/tlscacerts/ca.crt
+
+mkdir -p ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/tlsca
+cp ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/tls/tlscacerts/* ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/tlsca/tls-localhost-7054-ca-manufacturer.pem
+
+mkdir -p ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/ca
+cp ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/msp/cacerts/* ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/ca/localhost-7054-ca-manufacturer.pem
+
+cp organizations/peerOrganizations/auto.com/manufacturer.auto.com/msp/config.yaml organizations/peerOrganizations/auto.com/manufacturer.auto.com/peers/peer0.manufacturer.auto.com/msp/config.yaml
+
+Generate User MSP
+=================
+
+fabric-ca-client enroll -u https://user1:user1pw@localhost:7054 --caname ca-manufacturer -M ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/users/User1@manufacturer.auto.com/msp --tls.certfiles ${PWD}/organizations/fabric-ca/manufacturer/tls-cert.pem
+
+cp organizations/peerOrganizations/auto.com/manufacturer.auto.com/msp/config.yaml organizations/peerOrganizations/auto.com/manufacturer.auto.com/users/User1@manufacturer.auto.com/msp/config.yaml
+
+Generate org Admin MSP
+======================
+
+fabric-ca-client enroll -u https://manufactureradmin:manufactureradminpw@localhost:7054 --caname ca-manufacturer -M ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/users/Admin@manufacturer.auto.com/msp --tls.certfiles ${PWD}/organizations/fabric-ca/manufacturer/tls-cert.pem
+
+cp ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/msp/config.yaml ${PWD}/organizations/peerOrganizations/auto.com/manufacturer.auto.com/users/Admin@manufacturer.auto.com/msp/config.yaml
+
+============================================================End of Manufacturer ==================================================================================================
+
+================================================================== Dealer ==================================================================================================
+
+
+export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/
+
+enroll Dealer ca 
+======================
+
+fabric-ca-client enroll -u https://admin:adminpw@localhost:8054 --caname ca-dealer --tls.certfiles ${PWD}/organizations/fabric-ca/dealer/tls-cert.pem
+
+
+
+
+
+Create config.yaml for Dealer 
+===================================
+
+  echo 'NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/localhost-8054-ca-dealer.pem 
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/localhost-8054-ca-dealer.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/localhost-8054-ca-dealer.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/localhost-8054-ca-dealer.pem
+    OrganizationalUnitIdentifier: orderer' > ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/msp/config.yaml
+
+Register dealer peer
+==========================
+fabric-ca-client register --caname ca-dealer --id.name peer0dealer --id.secret peer0pw --id.type peer --tls.certfiles ${PWD}/organizations/fabric-ca/dealer/tls-cert.pem
+
+Register dealer user
+==========================
+fabric-ca-client register --caname ca-dealer --id.name user1 --id.secret user1pw --id.type client --tls.certfiles ${PWD}/organizations/fabric-ca/dealer/tls-cert.pem
+
+Register dealer Org admin
+==========================
+fabric-ca-client register --caname ca-dealer --id.name dealeradmin --id.secret dealeradminpw --id.type admin --tls.certfiles ${PWD}/organizations/fabric-ca/dealer/tls-cert.pem
+
+Generate Dealer peer MSP
+==============================
+fabric-ca-client enroll -u https://peer0dealer:peer0pw@localhost:8054 --caname ca-dealer -M ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/msp --csr.hosts peer0.dealer.auto.com --tls.certfiles ${PWD}/organizations/fabric-ca/dealer/tls-cert.pem
+
+Generate Dealer Peer tls cert
+===================================
+fabric-ca-client enroll -u https://peer0dealer:peer0pw@localhost:8054 --caname ca-dealer -M ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/tls --enrollment.profile tls --csr.hosts peer0.dealer.auto.com --csr.hosts localhost --tls.certfiles ${PWD}/organizations/fabric-ca/dealer/tls-cert.pem
+
+Organizing the folders
+======================
+
+Copy the certificate files
+==========================
+
+cp organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/tls/tlscacerts/* organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/tls/ca.crt
+cp organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/tls/signcerts/* organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/tls/server.crt
+cp organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/tls/keystore/* organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/tls/server.key
+
+mkdir -p ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/msp/tlscacerts
+cp ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/tls/tlscacerts/* ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/msp/tlscacerts/ca.crt
+
+mkdir -p ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/tlsca
+cp ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/tls/tlscacerts/* ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/tlsca/tls-localhost-8054-ca-dealer.pem
+
+mkdir -p ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/ca
+cp ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/msp/cacerts/* ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/ca/localhost-8054-ca-dealer.pem
+
+cp organizations/peerOrganizations/auto.com/dealer.auto.com/msp/config.yaml organizations/peerOrganizations/auto.com/dealer.auto.com/peers/peer0.dealer.auto.com/msp/config.yaml
+
+Generate User MSP
+=================
+
+fabric-ca-client enroll -u https://user1:user1pw@localhost:8054 --caname ca-dealer -M ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/users/User1@dealer.auto.com/msp --tls.certfiles ${PWD}/organizations/fabric-ca/dealer/tls-cert.pem
+
+cp organizations/peerOrganizations/auto.com/dealer.auto.com/msp/config.yaml organizations/peerOrganizations/auto.com/dealer.auto.com/users/User1@dealer.auto.com/msp/config.yaml
+
+Generate org Admin MSP
+======================
+
+fabric-ca-client enroll -u https://dealeradmin:dealeradminpw@localhost:8054 --caname ca-dealer -M ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/users/Admin@dealer.auto.com/msp --tls.certfiles ${PWD}/organizations/fabric-ca/dealer/tls-cert.pem
+
+cp ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/msp/config.yaml ${PWD}/organizations/peerOrganizations/auto.com/dealer.auto.com/users/Admin@dealer.auto.com/msp/config.yaml
+
+
+==========================================================End of Dealer ========================================================================================================
+
+========================================================== Mvd =================================================================================================================
+enroll Mvd ca 
+======================
+
+export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/
+
+fabric-ca-client enroll -u https://admin:adminpw@localhost:9054 --caname ca-mvd --tls.certfiles ${PWD}/organizations/fabric-ca/mvd/tls-cert.pem
+
+
+
+
+
+Create config.yaml for Mvd 
+===================================
+
+  echo 'NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/localhost-9054-ca-mvd.pem
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/localhost-9054-ca-mvd.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/localhost-9054-ca-mvd.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/localhost-9054-ca-mvd.pem
+    OrganizationalUnitIdentifier: orderer' > ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/msp/config.yaml
+
+Register mvd peer
+==========================
+fabric-ca-client register --caname ca-mvd --id.name peer0mvd --id.secret peer0pw --id.type peer --tls.certfiles ${PWD}/organizations/fabric-ca/mvd/tls-cert.pem
+
+Register mvd user
+==========================
+fabric-ca-client register --caname ca-mvd --id.name user1 --id.secret user1pw --id.type client --tls.certfiles ${PWD}/organizations/fabric-ca/mvd/tls-cert.pem
+
+Register mvd Org admin
+==========================
+fabric-ca-client register --caname ca-mvd --id.name mvdadmin --id.secret mvdadminpw --id.type admin --tls.certfiles ${PWD}/organizations/fabric-ca/mvd/tls-cert.pem
+
+Generate Mvd peer MSP
+==============================
+fabric-ca-client enroll -u https://peer0mvd:peer0pw@localhost:9054 --caname ca-mvd -M ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/msp --csr.hosts peer0.mvd.auto.com --tls.certfiles ${PWD}/organizations/fabric-ca/mvd/tls-cert.pem
+
+Generate Mvd Peer tls cert
+===================================
+fabric-ca-client enroll -u https://peer0mvd:peer0pw@localhost:9054 --caname ca-mvd -M ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/tls --enrollment.profile tls --csr.hosts peer0.mvd.auto.com --csr.hosts localhost --tls.certfiles ${PWD}/organizations/fabric-ca/mvd/tls-cert.pem
+
+
+Organizing the folders
+======================
+
+Copy the certificate files
+==========================
+
+cp organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/tls/tlscacerts/* organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/tls/ca.crt
+cp organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/tls/signcerts/* organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/tls/server.crt
+cp organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/tls/keystore/* organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/tls/server.key
+
+mkdir -p ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/msp/tlscacerts
+cp ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/tls/tlscacerts/* ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/msp/tlscacerts/ca.crt
+
+mkdir -p ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/tlsca
+cp ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/tls/tlscacerts/* ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/tlsca/tls-localhost-9054-ca-mvd.pem
+
+mkdir -p ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/ca
+cp ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/msp/cacerts/* ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/ca/localhost-9054-ca-mvd.pem
+
+cp organizations/peerOrganizations/auto.com/mvd.auto.com/msp/config.yaml organizations/peerOrganizations/auto.com/mvd.auto.com/peers/peer0.mvd.auto.com/msp/config.yaml
+
+Generate User MSP
+=================
+
+fabric-ca-client enroll -u https://user1:user1pw@localhost:9054 --caname ca-mvd -M ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/users/User1@mvd.auto.com/msp --tls.certfiles ${PWD}/organizations/fabric-ca/mvd/tls-cert.pem
+
+cp organizations/peerOrganizations/auto.com/mvd.auto.com/msp/config.yaml organizations/peerOrganizations/auto.com/mvd.auto.com/users/User1@mvd.auto.com/msp/config.yaml
+
+Generate org Admin MSP
+======================
+
+fabric-ca-client enroll -u https://mvdadmin:mvdadminpw@localhost:9054 --caname ca-mvd -M ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/users/Admin@mvd.auto.com/msp --tls.certfiles ${PWD}/organizations/fabric-ca/mvd/tls-cert.pem
+
+cp ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/msp/config.yaml ${PWD}/organizations/peerOrganizations/auto.com/mvd.auto.com/users/Admin@mvd.auto.com/msp/config.yaml
+
+==========================================================End of Mvd ========================================================================================================================
+
+==========================================================Orderer Config ========================================================================================================================
+
+
+enroll Orderer ca 
+=================
+
+mkdir -p organizations/ordererOrganizations/auto.com/orderer.auto.com/
+
+
+export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/
+
+fabric-ca-client enroll -u https://admin:adminpw@localhost:9052 --caname ca-orderer --tls.certfiles ${PWD}/organizations/fabric-ca/orderer/tls-cert.pem
+
+
+
+
+
+Create config.yaml for Mvd 
+===================================
+
+  echo 'NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/localhost-9052-ca-orderer.pem
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/localhost-9052-ca-orderer.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/localhost-9052-ca-orderer.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/localhost-9052-ca-orderer.pem
+    OrganizationalUnitIdentifier: orderer' > ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/msp/config.yaml
+
+Register orderer
+==========================
+fabric-ca-client register --caname ca-orderer --id.name orderer0 --id.secret orderer0pw --id.type orderer --tls.certfiles ${PWD}/organizations/fabric-ca/orderer/tls-cert.pem
+
+Register orderer Org admin
+==========================
+fabric-ca-client register --caname ca-orderer --id.name ordereradmin --id.secret ordereradminpw --id.type admin --tls.certfiles ${PWD}/organizations/fabric-ca/orderer/tls-cert.pem
+
+Generate Orderer MSP
+==============================
+fabric-ca-client enroll -u https://orderer0:orderer0pw@localhost:9052 --caname ca-orderer -M ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/msp --csr.hosts orderer.auto.com --csr.hosts localhost --tls.certfiles ${PWD}/organizations/fabric-ca/orderer/tls-cert.pem
+
+cp ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/msp/config.yaml ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/msp/config.yaml
+
+Generate Orderer TLS certificates
+===================================
+fabric-ca-client enroll -u https://orderer0:orderer0pw@localhost:9052 --caname ca-orderer -M ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/tls --enrollment.profile tls --csr.hosts orderer.auto.com --csr.hosts localhost --tls.certfiles ${PWD}/organizations/fabric-ca/orderer/tls-cert.pem
+
+Organizing the folders
+======================
+
+Copy the certificate files
+==========================
+
+  cp ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/tls/tlscacerts/* ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/tls/ca.crt
+  cp ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/tls/signcerts/* ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/tls/server.crt
+  cp ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/tls/keystore/* ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/tls/server.key
+
+  mkdir -p ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/msp/tlscacerts
+  cp ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/tls/tlscacerts/* ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/msp/tlscacerts/tlsca.auto.com-cert.pem
+
+  mkdir -p ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/msp/tlscacerts
+  cp ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/tls/tlscacerts/* ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/msp/tlscacerts/tlsca.auto.com-cert.pem
+
+  cp ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/msp/config.yaml ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/orderers/orderer.auto.com/msp/config.yaml
+
+Generate Orderer admin MSP
+==========================
+  fabric-ca-client enroll -u https://ordereradmin:ordereradminpw@localhost:9052 --caname ca-orderer -M ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/users/Admin@auto.com/msp --tls.certfiles ${PWD}/organizations/fabric-ca/orderer/tls-cert.pem
+
+  cp ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/msp/config.yaml ${PWD}/organizations/ordererOrganizations/auto.com/orderer.auto.com/users/Admin@auto.com/msp/config.yaml
+
+==========================================================End of Mvd ========================================================================================================================

@@ -1,0 +1,61 @@
+#
+# Copyright IBM Corp All Rights Reserved
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+networks:
+  automobile:
+
+services:
+
+  couchdbAdminPeer1:
+    container_name: couchdbAdminPeer1
+    image: hyperledger/fabric-couchdb
+    environment:
+      - COUCHDB_USER=peer1.Admin
+      - COUCHDB_PASSWORD=password
+    ports:
+      - 6984:5984
+    networks:
+      - automobile
+
+
+  peer1.admin.auto.com:
+    container_name: peer1.admin.auto.com
+    image: hyperledger/fabric-peer:2.2.3
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_PEER_ID=peer1.admin.auto.com
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_CHAINCODEADDRESS=peer1.admin.auto.com:8052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:8052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.admin.auto.com:8051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.admin.auto.com:8051
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_CHAINCODE_LOGGING_LEVEL=INFO
+      - CORE_PEER_LOCALMSPID=AdminMSP
+      - CORE_PEER_ADDRESS=peer1.admin.auto.com:8051
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=${COMPOSE_PROJECT_NAME}_automobile
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdbAdminPeer1:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=peer1.Admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=password
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: peer node start
+    ports:
+      - 8051:8051
+    volumes:
+      - /var/run/:/host/var/run/
+      - ../organizations/peerOrganizations/auto.com/admin.auto.com/peers/peer1.admin.auto.com/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/auto.com/admin.auto.com/peers/peer1.admin.auto.com/tls:/etc/hyperledger/fabric/tls
+      
+    depends_on:
+      - couchdbAdminPeer1 
+    networks:
+      - automobile

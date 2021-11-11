@@ -1,0 +1,36 @@
+[
+    {
+        "transactionName": "txnExists",
+        "transactionLabel": "A test txnExists transaction",
+        "arguments": [
+            "001"
+        ],
+        "transientData": {}
+    },
+    {
+        "transactionName": "createTxn",
+        "transactionLabel": "A test createTxn transaction",
+        "arguments": [
+            "001"
+        ],
+        "transientData": {
+            "privateValue": "some value"
+        }
+    },
+    {
+        "transactionName": "readTxn",
+        "transactionLabel": "A test readTxn transaction",
+        "arguments": [
+            "001"
+        ],
+        "transientData": {}
+    },
+    {
+        "transactionName": "deleteTxn",
+        "transactionLabel": "A test deleteTxn transaction",
+        "arguments": [
+            "001"
+        ],
+        "transientData": {}
+    }
+]

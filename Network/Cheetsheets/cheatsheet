@@ -1,0 +1,184 @@
+Admin env 
+================
+CORE_PEER_LOCALMSPID=AdminMSP
+CHANNEL_NAME=propertychannel
+CORE_PEER_ADDRESS=peer0.admin.property.com:7051
+ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem
+CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.crt
+CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.key
+CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt
+CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/users/Admin@admin.property.com/msp
+CORE_PEER_TLS_ENABLED=true
+FABRIC_LOGGING_SPEC=INFO
+
+
+User env 
+==========
+CORE_PEER_LOCALMSPID=UserMSP
+CHANNEL_NAME=propertychannel
+CORE_PEER_ADDRESS=peer0.user.property.com:9051
+ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem
+CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/server.crt
+CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/server.key
+CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt
+CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/users/Admin@user.property.com/msp
+CORE_PEER_TLS_ENABLED=true
+FABRIC_LOGGING_SPEC=INFO
+
+
+
+export PATH=~/Desktop/fabric-samples/bin:$PATH
+export FABRIC_CFG_PATH=${PWD}
+export CHANNEL_NAME=propertychannel
+export IMAGE_TAG=latest
+export COMPOSE_PROJECT_NAME=fabricscratch-ca
+; cryptogen generate --config=./crypto-config.yaml 
+
+configtxgen -profile OrdererGenesis -channelID system-channel -outputBlock ./channel-artifacts/genesis.block
+configtxgen -profile AutoChannel -outputCreateChannelTx ./channel-artifacts/$CHANNEL_NAME.tx -channelID $CHANNEL_NAME
+
+docker-compose -f docker/docker-compose-singlepeer.yml up -d
+ORDERER_TLS_CA=`docker exec cli  env | grep ORDERER_TLS_CA | cut -d'=' -f2`
+
+docker exec cli peer channel create -o orderer.property.com:7050 -c $CHANNEL_NAME -f /opt/gopath/src/github.com/hyperledger/fabric/peer/config/$CHANNEL_NAME.tx --tls --cafile $ORDERER_TLS_CA
+
+peer channel join -b $CHANNEL_NAME.block
+
+
+#### repeat for all the peers###
+
+
+############### Anchor update ############################################################################################################
+configtxgen -profile AutoChannel -outputAnchorPeersUpdate ./channel-artifacts/AdminMSPanchors.tx -channelID propertychannel -asOrg AdminMSP
+
+
+configtxgen -profile AutoChannel -outputAnchorPeersUpdate ./channel-artifacts/UserMSPanchors.tx -channelID propertychannel -asOrg UserMSP
+
+
+peer channel update -o orderer.property.com:7050 -c propertychannel -f ./config/AdminMSPanchors.tx --tls --cafile $ORDERER_TLS_CA
+
+peer channel update -o orderer.property.com:7050 -c propertychannel -f ./config/UserMSPanchors.tx --tls --cafile $ORDERER_TLS_CA
+
+
+################################################Repeat for all orgs###############################################################
+
+
+
+##############################Package and install fabcar chaincode################################################################################
+
+
+docker cp /Desktop/fabric-samples/chaincode/fabcar/javascript 3d06ac02c5fe:/opt/gopath/src/github.com/chaincode/
+
+peer lifecycle chaincode package fabcar.tar.gz --path /opt/gopath/src/github.com/chaincode/javascript/ --lang node --label fabcar_1
+
+peer lifecycle chaincode install fabcar.tar.gz 
+
+*** copy the package ID ******
+
+fabcar_1:395f8891ab794db178adbc354ea9d65ac84412303728e0e4aa5371bf97112b9d
+
+##############################################Repeat this step for all peers and organizations#############################
+
+################################ Approveformyorg########################################
+
+peer lifecycle chaincode approveformyorg --channelID propertychannel --name fabcar --version 1 --sequence 1 --package-id fabcar_1:395f8891ab794db178adbc354ea9d65ac84412303728e0e4aa5371bf97112b9d  --tls --cafile $ORDERER_TLS_CA --waitForEvent
+
+#############################repeat for all orgs ##########################################################
+
+
+################################ Commit on all orgs #####################################################
+
+
+peer lifecycle chaincode checkcommitreadiness --channelID propertychannel --name fabcar --version 1 --sequence 1 --tls --cafile $ORDERER_TLS_CA --output json
+
+
+peer lifecycle chaincode commit -o orderer.property.com:7050 --channelID propertychannel \
+     --name fabcar --tls --cafile $ORDERER_TLS_CA \
+     --peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+     --peerAddresses peer0.user.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+     --version 1 --sequence 1
+
+
+
+peer chaincode invoke -o orderer.property.com:7050 --tls \
+--cafile $ORDERER_TLS_CA -C propertychannel -n fabcar \
+--peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+-c '{"function":"initLedger","Args":[]}'
+
+peer chaincode query -o orderer.property.com:7050 --tls \
+--cafile $ORDERER_TLS_CA -C propertychannel -n fabcar \
+--peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+-c '{"function":"queryAllCars","Args":[]}'
+
+peer chaincode query -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+    -C propertychannel -n fabcar \
+    --peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt  \
+    -c '{"Args":["queryCar","CAR1"]}'
+
+peer chaincode query -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+    -C propertychannel -n fabcar \
+    --peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt  \
+    -c '{"Args":["queryAllCars"]}'
+
+peer chaincode invoke -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+-C propertychannel -n fabcar \
+--peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+-c '{"function":"createCar", "Args":["CAR100","Tata","Tiago","Black","Arun"]}'
+
+
+peer chaincode invoke -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA -C propertychannel -n fabcar --peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt --peerAddresses peer0.user.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/user.property.com/peers/peer0.user.property.com/tls/ca.crt -c '{"function":"InitLedger","Args":[]}'
+
+peer chaincode invoke -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+ -C propertychannel -n fabcar \
+ --peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+ --peerAddresses peer0.user.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+ -c '{"function":"createCar", "Args":["CAR100","Tata","Tiago","Black","Arun"]}'
+
+
+
+docker-compose -f docker-compose-singlepeer.yml down
+
+
+
+######################################### Package and install propertymobile chaincode ##################################
+
+peer lifecycle chaincode package property.tar.gz --path /opt/gopath/src/github.com/chaincode/KBA-Automobile/ --lang node --label kba_1
+
+peer lifecycle chaincode install property.tar.gz 
+
+
+kba_1:b364d2f23bb3884cbc630273ebb3a176c328edc1e23e356f305abc5dc4ddef28
+
+peer lifecycle chaincode approveformyorg --channelID propertychannel --name property --version 1 --sequence 1 --package-id kba_1:473f54f777e920110bf143c2ad42b9e23635d0a3b3fdd017b59e8b877b014189 --collections-config /opt/gopath/src/github.com/chaincode/KBA-Automobile/collections.json --tls --cafile $ORDERER_TLS_CA --waitForEvent
+
+
+peer lifecycle chaincode checkcommitreadiness --channelID propertychannel --name property --version 1 --sequence 1 --tls --cafile $ORDERER_TLS_CA --output json
+
+peer lifecycle chaincode commit -o orderer.property.com:7050 --channelID propertychannel \
+     --name property --tls --cafile $ORDERER_TLS_CA \
+     --collections-config /opt/gopath/src/github.com/chaincode/KBA-Automobile/collections.json \
+     --peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+     --peerAddresses peer0.user.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+     --version 1 --sequence 1
+
+peer chaincode invoke -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+ -C propertychannel -n property \
+ --peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+ --peerAddresses peer0.user.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+ -c '{"function":"createCar", "Args":["CAR100","Tata","Tiago","Black","25/01/2021","Tata"]}'
+
+
+peer chaincode invoke -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+ -C propertychannel -n property \
+ --peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+ --peerAddresses peer0.user.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+ -c '{"function":"createCar", "Args":["CAR100","Tata","Tiago","Black","25/01/2021","Tata"]}'
+
+
+
+export ASSET_PROPERTIES=$(echo "{\"make\":\"Tata",\"model\":\"Tiago\",\"color\":\"green\",\"userName\":"Derikk"}" | base64 | tr -d \\n)
+peer chaincode invoke -C propertychannel -n property -o localhost:7050 \
+--peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+--peerAddresses peer0.user.property.com:7051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+--tls --cafile $ORDERER_TLS_CA \
+-C mychannel  -n private -c '{"function":"createOrder","Args":["01"]}' --transient "{\"asset_properties\":\"$ASSET_PROPERTIES\"}"

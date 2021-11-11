@@ -1,0 +1,10 @@
+[
+  {
+    "name": "CollectionOrder",
+    "policy": "OR('UserMSP.member', 'AdminMSP.member')",
+    "requiredPeerCount": 1,
+    "maxPeerCount": 2,
+    "blockToLive": 0,
+    "memberOnlyRead": true
+  }
+]

@@ -1,0 +1,22 @@
+export MICROFAB_CONFIG='{
+    "port": 8080,
+    "endorsing_organizations":[
+        {
+            "name": "User"
+        },
+        {
+            "name": "Admin"
+        }
+    ],
+    "channels":[
+        {
+            "name": "autochannel",
+            "endorsing_organizations":[
+                "User",
+                "Admin"
+            ]
+        }
+    ]
+}'
+
+docker run --name microfab --rm -p 8080:8080 -e MICROFAB_CONFIG ibmcom/ibp-microfab

@@ -1,0 +1,92 @@
+Open terminal on fabricscratch-ca
+
+We will be adding new peer for admin.
+
+export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/property.com/admin.property.com/
+
+
+Register new peer 
+=================
+
+fabric-ca-client register --caname ca-admin --id.name peer1admin --id.secret peer1pw --id.type peer --tls.certfiles ${PWD}/organizations/fabric-ca/admin/tls-cert.pem
+
+Generate Peer MSP 
+=================
+
+fabric-ca-client enroll -u https://peer1admin:peer1pw@localhost:7054 --caname ca-admin -M ${PWD}/organizations/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/msp --csr.hosts peer1.admin.property.com --tls.certfiles ${PWD}/organizations/fabric-ca/admin/tls-cert.pem
+
+Generate Peer TLS 
+=================
+
+fabric-ca-client enroll -u https://peer1admin:peer1pw@localhost:7054 --caname ca-admin -M ${PWD}/organizations/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls --enrollment.profile tls --csr.hosts peer1.admin.property.com --csr.hosts localhost --tls.certfiles ${PWD}/organizations/fabric-ca/admin/tls-cert.pem
+
+
+Organizing the folders
+======================
+
+cp organizations/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/tlscacerts/* organizations/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/ca.crt
+cp organizations/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/signcerts/* organizations/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/server.crt
+cp organizations/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/keystore/* organizations/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/server.key
+
+cp organizations/peerOrganizations/property.com/admin.property.com/msp/config.yaml organizations/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/msp/config.yaml
+
+
+Create docker-compose for new peer. *.*
+==================================
+
+set env
+=======
+
+export CHANNEL_NAME=propertychannel
+export IMAGE_TAG=latest
+export COMPOSE_PROJECT_NAME=fabricscratch-ca
+
+docker-compose -f docker/docker-compose-newPeer.yaml up -d 
+
+
+Now to execute the peer commands, we need to get in the context of cli container
+
+docker exec -it cli bash 
+
+
+Env for peer1 admin
+==========================
+
+CORE_PEER_LOCALMSPID=AdminMSP
+CHANNEL_NAME=propertychannel
+CORE_PEER_ADDRESS=peer1.admin.property.com:8051
+ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem
+CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/server.crt
+CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/server.key
+CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/ca.crt
+CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/users/Admin@admin.property.com/msp
+CORE_PEER_TLS_ENABLED=true
+FABRIC_LOGGING_SPEC=INFO
+
+
+peer channel list
+
+
+peer channel join -b $CHANNEL_NAME.block
+
+
+peer lifecycle chaincode install property.tar.gz 
+
+
+peer chaincode query --tls --cafile $ORDERER_TLS_CA \
+    -C propertychannel -n property \
+    --peerAddresses peer1.admin.property.com:8051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/ca.crt  \
+    -c '{"Args":["readCar","CAR100"]}'
+
+
+peer chaincode invoke -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+ -C propertychannel -n property \
+ --peerAddresses peer1.admin.property.com:8051 --tlsRootCertFiles ${PWD}/crypto/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/ca.crt \
+ -c '{"function":"createCar", "Args":["CAR200","Tata","Tiago","Black","12/12/12","Arun"]}'
+
+
+peer chaincode invoke -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+-C propertychannel -n property \
+--peerAddresses peer1.admin.property.com:8051 \
+--tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer1.admin.property.com/tls/ca.crt \
+-c '{"function":"createCar", "Args":["CAR100","Tata","Tiago","Black","25/01/2021","Tata"]}'

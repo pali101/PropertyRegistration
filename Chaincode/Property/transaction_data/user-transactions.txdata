@@ -1,0 +1,69 @@
+[
+  {
+    "transactionName": "userExists",
+    "transactionLabel": "A test userExists transaction",
+    "arguments": [
+      "prop-001"
+    ],
+    "transientData": {}
+  },
+  {
+    "transactionName": "createUser",
+    "transactionLabel": "A test createUser transaction",
+    "arguments": [
+      "usr-001",
+      "Adam",
+      "1234567890",
+      "usr001@email.com"
+    ],
+    "transientData": {}
+  },
+  {
+    "transactionName": "readUser",
+    "transactionLabel": "A test readUser transaction",
+    "arguments": [
+      "usr-001"
+    ],
+    "transientData": {}
+  },
+  {
+    "transactionName": "deleteUser",
+    "transactionLabel": "A test deleteUser transaction",
+    "arguments": [
+      "usr-001"
+    ],
+    "transientData": {}
+  },
+  {
+    "transactionName": "queryAllUsers",
+    "transactionLabel": "A test queryAllUsers transaction",
+    "arguments": [],
+    "transientData": {}
+  },
+  {
+    "transactionName": "getUsersByRange",
+    "transactionLabel": "A test getUsersByRange transaction",
+    "arguments": [
+      "",
+      ""
+    ],
+    "transientData": {}
+  },
+  {
+    "transactionName": "getUsersWithPagination",
+    "transactionLabel": "A test getUsersWithPagination transaction",
+    "arguments": [
+      "2",
+      ""
+    ],
+    "transientData": {}
+  },
+  {
+    "transactionName": "getUsersHistory",
+    "transactionLabel": "A test getUsersHistory transaction",
+    "arguments": [
+      "User-001"
+    ],
+    "transientData": {}
+  }
+]

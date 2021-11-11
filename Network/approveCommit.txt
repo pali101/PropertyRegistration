@@ -1,0 +1,128 @@
+
+export ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem
+
+export CHANNEL_NAME=autochannel
+
+******************** Approve for Admin Org ***********************
+
+docker exec \
+     -e CORE_PEER_LOCALMSPID=AdminMSP \
+     -e CHANNEL_NAME=autochannel \
+     -e CORE_PEER_ADDRESS=peer0.admin.property.com:7051 \
+     -e ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem \
+     -e CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.crt \
+     -e CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.key \
+     -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+     -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/users/Admin@admin.property.com/msp \
+     -e CORE_PEER_TLS_ENABLED=true \
+     -e FABRIC_LOGGING_SPEC=INFO \
+     -i \
+     cli peer lifecycle chaincode approveformyorg --channelID autochannel \
+     --collections-config /opt/gopath/src/github.com/chaincode/Property/collections.json \
+     --name kbaproperty --version 1 --sequence 1 --signature-policy "OR('AdminMSP.peer', 'UserMSP.peer')" \
+     --package-id kbaproperty_1:9e81cf54dd3f2b7a5e7d24b08f01a6c694fff2123606140fb308a300b095a785 \
+     --tls --cafile $ORDERER_TLS_CA \
+     --waitForEvent
+
+******************** Approve for User Org ***********************
+
+docker exec \
+     -e CORE_PEER_LOCALMSPID=UserMSP \
+     -e CHANNEL_NAME=autochannel \
+     -e CORE_PEER_ADDRESS=peer0.user.property.com:9051 \
+     -e ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem \
+     -e CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/server.crt \
+     -e CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/server.key \
+     -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+     -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/users/Admin@user.property.com/msp \
+     -e CORE_PEER_TLS_ENABLED=true \
+     -e FABRIC_LOGGING_SPEC=INFO \
+     -i \
+     cli peer lifecycle chaincode approveformyorg --channelID autochannel \
+     --name kbaproperty --version 1 --sequence 1 --signature-policy "OR('AdminMSP.peer', 'UserMSP.peer')"\
+     --collections-config /opt/gopath/src/github.com/chaincode/Property/collections.json \
+     --package-id kbaproperty_1:9e81cf54dd3f2b7a5e7d24b08f01a6c694fff2123606140fb308a300b095a785  \
+     --tls --cafile $ORDERER_TLS_CA --waitForEvent
+
+
+******************** Check Commit Readiness ***********************
+
+docker exec \
+     -e CORE_PEER_LOCALMSPID=AdminMSP \
+     -e CHANNEL_NAME=autochannel \
+     -e CORE_PEER_ADDRESS=peer0.admin.property.com:7051 \
+     -e ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem \
+     -e CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.crt \
+     -e CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.key \
+     -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+     -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/users/Admin@admin.property.com/msp \
+     -e CORE_PEER_TLS_ENABLED=true \
+     -e FABRIC_LOGGING_SPEC=INFO \
+     -i \
+     cli peer lifecycle chaincode checkcommitreadiness --channelID autochannel \
+     --name kbaproperty --version 1 --sequence 1 --tls --cafile $ORDERER_TLS_CA --output json
+
+******************** Commit Chaincode ***********************
+
+docker exec \
+     -e CORE_PEER_LOCALMSPID=AdminMSP \
+     -e CHANNEL_NAME=autochannel \
+     -e CORE_PEER_ADDRESS=peer0.admin.property.com:7051 \
+     -e ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem \
+     -e CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.crt \
+     -e CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.key \
+     -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+     -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/users/Admin@admin.property.com/msp \
+     -e CORE_PEER_TLS_ENABLED=true \
+     -e FABRIC_LOGGING_SPEC=INFO \
+     -i \
+     cli peer lifecycle chaincode commit -o orderer.property.com:7050 -C autochannel \
+     --name kbaproperty --tls --cafile $ORDERER_TLS_CA \
+     --peerAddresses peer0.admin.property.com:7051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+     --peerAddresses peer0.user.property.com:9051 --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+     --collections-config /opt/gopath/src/github.com/chaincode/Property/collections.json \
+     --version 1 --sequence 1 \
+     --signature-policy "OR('AdminMSP.peer', 'UserMSP.peer')"
+
+
+
+
+
+******************** Invoke Chaincode As Admin Org Peer***********************
+
+docker exec \
+     -e CORE_PEER_LOCALMSPID=AdminMSP \
+     -e CHANNEL_NAME=autochannel \
+     -e CORE_PEER_ADDRESS=peer0.admin.property.com:7051 \
+     -e ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem \
+     -e CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.crt \
+     -e CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/server.key \
+     -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+     -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/users/Admin@admin.property.com/msp \
+     -e CORE_PEER_TLS_ENABLED=true \
+     -e FABRIC_LOGGING_SPEC=INFO \
+     -i \
+     cli peer chaincode invoke -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+     -C autochannel -n kbaproperty \
+     --peerAddresses peer0.admin.property.com:7051 \
+     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/admin.property.com/peers/peer0.admin.property.com/tls/ca.crt \
+     -c '{"function":"userRegistrationRequest", "Args":["usr-001","Adam","1234567890","usr001@email.com"]}'
+
+******************** Invoke Chaincode As User Org Peer***********************
+docker exec \
+     -e CORE_PEER_LOCALMSPID=UserMSP \
+     -e CHANNEL_NAME=autochannel \
+     -e CORE_PEER_ADDRESS=peer0.user.property.com:9051 \
+     -e ORDERER_TLS_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/property.com/orderer.property.com/msp/tlscacerts/tlsca.property.com-cert.pem \
+     -e CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/server.crt \
+     -e CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/server.key \
+     -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+     -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/users/Admin@user.property.com/msp \
+     -e CORE_PEER_TLS_ENABLED=true \
+     -e FABRIC_LOGGING_SPEC=INFO \
+     -i \
+     cli peer chaincode invoke -o orderer.property.com:7050 --tls --cafile $ORDERER_TLS_CA \
+     -C autochannel -n kbaproperty \
+     --peerAddresses peer0.user.property.com:9051 \
+     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/property.com/user.property.com/peers/peer0.user.property.com/tls/ca.crt \
+     -c '{"function":"userRegistrationRequest", "Args":["usr-001","Adam","1234567890","usr001@email.com"]}'
