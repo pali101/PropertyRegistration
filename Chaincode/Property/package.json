@@ -1,6 +1,6 @@
 {
   "name": "Property",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "Property Contract",
   "main": "index.js",
   "engines": {

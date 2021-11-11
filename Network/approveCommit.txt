@@ -20,7 +20,7 @@ docker exec \
      cli peer lifecycle chaincode approveformyorg --channelID autochannel \
      --collections-config /opt/gopath/src/github.com/chaincode/Property/collections.json \
      --name kbaproperty --version 1 --sequence 1 --signature-policy "OR('AdminMSP.peer', 'UserMSP.peer')" \
-     --package-id kbaproperty_1:9e81cf54dd3f2b7a5e7d24b08f01a6c694fff2123606140fb308a300b095a785 \
+     --package-id kbaproperty_1:c576d881b2ee45689adea98e77a23704fc4732cb44b0f097dec45aff7babc1b5 \
      --tls --cafile $ORDERER_TLS_CA \
      --waitForEvent
 
@@ -41,7 +41,7 @@ docker exec \
      cli peer lifecycle chaincode approveformyorg --channelID autochannel \
      --name kbaproperty --version 1 --sequence 1 --signature-policy "OR('AdminMSP.peer', 'UserMSP.peer')"\
      --collections-config /opt/gopath/src/github.com/chaincode/Property/collections.json \
-     --package-id kbaproperty_1:9e81cf54dd3f2b7a5e7d24b08f01a6c694fff2123606140fb308a300b095a785  \
+     --package-id kbaproperty_1:c576d881b2ee45689adea98e77a23704fc4732cb44b0f097dec45aff7babc1b5  \
      --tls --cafile $ORDERER_TLS_CA --waitForEvent
 
 

@@ -5,6 +5,7 @@
 'use strict';
 
 const { Contract } = require('fabric-contract-api');
+const SHA256 = require("crypto-js/sha256");
 
 class UserContract extends Contract { 
     
@@ -12,7 +13,6 @@ class UserContract extends Contract {
         // Unique name when multiple contracts per chaincode file
         super('org.property.userContract');
     }
-
     async userExists(ctx, userId) {
         const buffer = await ctx.stub.getState(userId);
         return (!!buffer && buffer.length > 0);

@@ -8,7 +8,7 @@
     "transientData": {}
   },
   {
-    "transactionName": "createUser",
+    "transactionName": "userRegistrationRequest",
     "transactionLabel": "A test createUser transaction",
     "arguments": [
       "usr-001",
